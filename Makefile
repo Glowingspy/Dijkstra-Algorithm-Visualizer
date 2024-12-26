@@ -4,7 +4,7 @@ CFLAGS = -Isrc/include
 LDFLAGS = -Lsrc/lib -lmingw32 -lSDL2main -lSDL2
 
 # Target executable
-TARGET = sdl2-example
+TARGET = Dijkstra_Algorithm
 
 # Source files
 SRC = main2.cpp

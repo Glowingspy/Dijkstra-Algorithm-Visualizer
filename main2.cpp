@@ -1,4 +1,5 @@
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 #include <iostream>
 #include <queue>
 #include <vector>
@@ -15,28 +16,33 @@ enum CellType {
     PATH
 };
 
+
 struct Node {
     int x, y;
-    Node* parent; // To track the parent node for path tracing
+    Node* parent; //For tracking the parent nodee
     Node(int _x, int _y) : x(_x), y(_y), parent(nullptr) {}
 };
 
-// Direction vectors for 8 possible movements (up, down, left, right, diagonals)
+/*Direction have eight possible movenments(x and y corresponding with the given position of the neighbour, also the cost, diagnoals cost more)*/
 int dx[] = {0, 0, -1, 1, -1, 1, -1, 1};
 int dy[] = {-1, 1, 0, 0, -1, -1, 1, 1};
-int cost[] = {1, 1, 1, 1, 2, 2, 2, 2}; // Costs for each move
+int cost[] = {1, 1, 1, 1, 2, 2, 2, 2}; 
 
-// Dijkstra's algorithm to find the shortest path
+// The Dijkstra algorithm
 void dijkstra(CellType grid[20][20], Node& startNode, Node& endNode, vector<pair<int, int>>& path) {
     const int gridCols = 20;
     const int gridRows = 20;
 
     // Distance matrix
     vector<vector<int>> distance(gridRows, vector<int>(gridCols, INT_MAX));
+    //INT_MAX is to show that the distances are infinity. Every cell is initialized to be at infinity except for the start node
     distance[startNode.y][startNode.x] = 0;
 
     // Priority queue for Dijkstra's algorithm
+
+    //This is a comparator so we can store the nodes in order
     auto cmp = [](pair<int, Node*> a, pair<int, Node*> b) { return a.first > b.first; };
+    //creates a priority queue of Nodes with their values in a vecotr space, that are compared with the comparator above
     priority_queue<pair<int, Node*>, vector<pair<int, Node*>>, decltype(cmp)> pq(cmp);
     pq.push({0, &startNode});
 
@@ -47,6 +53,8 @@ void dijkstra(CellType grid[20][20], Node& startNode, Node& endNode, vector<pair
         pair<int, Node*> top = pq.top();
         int dist = top.first;
         Node* current = top.second;
+        //It pops it since it has already been processed,
+        //If it is part of the correct path, it will be added later on anyway
         pq.pop();
 
         // If we reach the end node, stop
@@ -55,19 +63,23 @@ void dijkstra(CellType grid[20][20], Node& startNode, Node& endNode, vector<pair
         }
 
         // Explore neighbors
-        for (int i = 0; i < 8; ++i) {
+        for (int i = 0; i < 4; i++) {
             int newX = current->x + dx[i];
             int newY = current->y + dy[i];
             int moveCost = cost[i];
 
+            //Check validity of neighbor
             if (newX >= 0 && newY >= 0 && newX < gridCols && newY < gridRows &&
                 grid[newY][newX] != WALL) {
 
                 int newDist = dist + moveCost;
                 if (newDist < distance[newY][newX]) {
                     distance[newY][newX] = newDist;
+                    //Creaate a neighbor node
                     Node* neighbor = new Node(newX, newY);
                     parent[newY][newX] = current;
+
+                    //Add it to the priority queue
                     pq.push({newDist, neighbor});
                 }
             }
@@ -77,6 +89,9 @@ void dijkstra(CellType grid[20][20], Node& startNode, Node& endNode, vector<pair
     // Trace back the path from end to start
     Node* current = &endNode;
     stack<pair<int, int>> pathStack;
+
+    //Until you find a node that isnt pointing anywhere,
+    //push it to the stack
 
     while (current != nullptr) {
         pathStack.push({current->x, current->y});
@@ -91,11 +106,20 @@ void dijkstra(CellType grid[20][20], Node& startNode, Node& endNode, vector<pair
 }
 
 
+
+
+
+
 int main(int argc, char** argv) {
     if(SDL_Init(SDL_INIT_VIDEO) < 0) {
         cerr << "SDL could not initialize! SDL_Error: " << SDL_GetError() << endl;
         return 1;
     }
+
+    cout << "S for Starting Node" << endl;
+    cout << "E for Ending Node" << endl;
+    cout << "W for Selecting walls" << endl;
+    cout << "R to reset everything" <<endl;
 
     SDL_Window* window = SDL_CreateWindow("Dijkstra's Algorithm", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600, SDL_WINDOW_SHOWN);
     if (!window) {
@@ -161,10 +185,30 @@ int main(int argc, char** argv) {
                 } else if (event.key.keysym.sym == SDLK_d) {
                     if (startNode && endNode) {
                         path.clear();
-                        dijkstra(grid, *startNode, *endNode, path); // Run Dijkstra when 'D' is pressed
+                        dijkstra(grid, *startNode, *endNode, path);
                     }
+                } else if (event.key.keysym.sym == SDLK_r){
+                    for(int row = 0; row < gridRows; ++row) {
+                        for(int col = 0; col < gridCols; ++col){
+                            grid[row][col] = EMPTY;
+                        }
+
+                    }
+                    path.clear();
+                    startSelected = false;
+                    endSelected = false;
+                    delete startNode;
+                    delete endNode;
+                    startNode = nullptr;
+                    endNode = nullptr;
                 }
-            } else if (event.type == SDL_MOUSEBUTTONDOWN) {
+
+           
+            }
+
+
+
+            else if (event.type == SDL_MOUSEBUTTONDOWN) {
                 if (event.button.button == SDL_BUTTON_LEFT) {
                     mousePressed = true;
 
